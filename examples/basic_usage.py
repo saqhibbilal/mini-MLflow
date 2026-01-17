@@ -123,6 +123,36 @@ else:
     print("No runs found in experiment")
 
 print()
+
+
+# Example 5: Versioning
+print("=" * 60)
+print("Example 5: Versioning")
+print("=" * 60)
+
+tracker = ExperimentTracker(runs_dir="mlruns")
+
+# Create multiple versions of the same model
+for version in ["v1.0", "v1.1", "v2.0"]:
+    run = tracker.start_run(run_name="neural_network", version=version)
+    run.log_param("learning_rate", 0.01 if "v1" in version else 0.001)
+    run.log_param("version", version)
+    accuracy = 0.90 + (0.02 * int(version.split(".")[0][1]))  # Simulate improvement
+    run.log_metric("accuracy", accuracy)
+    print(f"Created neural_network version {version} with accuracy {accuracy:.2f}")
+    tracker.end_run()
+
+# Retrieve a specific version
+v1_run = tracker.get_run_by_version("neural_network", "v1.0")
+if v1_run:
+    print(f"\nRetrieved v1.0: accuracy = {v1_run['metrics']['accuracy']:.2f}")
+
+# Get the latest version
+latest = tracker.get_latest_version("neural_network")
+if latest:
+    print(f"Latest version: {latest['metadata'].get('version', 'N/A')}")
+
+print()
 print("=" * 60)
 print("All examples completed!")
 print("=" * 60)

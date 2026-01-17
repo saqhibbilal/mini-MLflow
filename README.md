@@ -107,6 +107,32 @@ if runs:
     print(f"Metrics: {run_data['metrics']}")
 ```
 
+### Example 4: Versioning
+
+```python
+from mini_mlflow import ExperimentTracker
+
+tracker = ExperimentTracker(experiment_id=0)
+
+# Create multiple versions of the same model
+for version in ["v1.0", "v1.1", "v2.0"]:
+    with tracker as run:
+        run.log_param("learning_rate", 0.01)
+        run.log_param("version", version)
+        run.log_metric("accuracy", 0.95)
+    # Note: version should be set via start_run, see API reference
+
+# Retrieve a specific version
+v1_run = tracker.get_run_by_version("my_model", "v1.0")
+if v1_run:
+    print(f"v1.0 accuracy: {v1_run['metrics']['accuracy']}")
+
+# Get the latest version
+latest = tracker.get_latest_version("my_model")
+if latest:
+    print(f"Latest: {latest['metadata'].get('version')}")
+```
+
 ## API Reference
 
 ### MLflow-like API (Global Functions)
@@ -208,7 +234,7 @@ with ExperimentTracker(run_name="my_experiment") as run:
 
 ### Run Class
 
-#### `Run(run_id=None, experiment_id=0, name=None, runs_dir="mlruns")`
+#### `Run(run_id=None, experiment_id=0, name=None, version=None, runs_dir="mlruns")`
 
 Represents a single experiment run.
 
@@ -216,6 +242,7 @@ Represents a single experiment run.
 - `run_id` (str, optional): Unique identifier. If None, a UUID is generated.
 - `experiment_id` (int): Experiment ID (default: 0)
 - `name` (str, optional): Name for the run
+- `version` (str, optional): Version string for the run (e.g., "v1.0", "v1.1")
 - `runs_dir` (str): Base directory for storing runs (default: "mlruns")
 
 **Methods:**
@@ -229,6 +256,7 @@ Represents a single experiment run.
 - `run_id`: Unique run identifier
 - `experiment_id`: Experiment ID
 - `name`: Run name
+- `version`: Version string (optional)
 - `status`: Run status ("RUNNING", "FINISHED", "FAILED")
 - `start_time`: ISO timestamp when run started
 - `end_time`: ISO timestamp when run ended (None if still running)
@@ -245,9 +273,15 @@ run.end()
 
 ### ExperimentTracker Methods
 
-#### `start_run(run_name=None, experiment_id=None, run_id=None)`
+#### `start_run(run_name=None, experiment_id=None, run_id=None, version=None)`
 
 Start a new run with this tracker.
+
+**Parameters:**
+- `run_name` (str, optional): Name for the run
+- `experiment_id` (int, optional): Experiment ID
+- `run_id` (str, optional): Custom run ID
+- `version` (str, optional): Version string for the run
 
 **Returns:**
 - `Run`: The created Run object
@@ -283,9 +317,42 @@ Retrieve data for a specific run.
 
 **Returns:**
 - `dict`: Dictionary containing:
-  - `metadata`: Run metadata (name, status, timestamps, etc.)
+  - `metadata`: Run metadata (name, status, timestamps, version, etc.)
   - `params`: Dictionary of parameters
   - `metrics`: Dictionary of metrics
+
+#### `get_run_by_version(run_name, version, experiment_id=None)`
+
+Retrieve a run by its name and version.
+
+**Parameters:**
+- `run_name` (str): The name of the run
+- `version` (str): The version string (e.g., "v1.0")
+- `experiment_id` (int, optional): Experiment ID. If None, uses tracker's experiment_id.
+
+**Returns:**
+- `dict` or `None`: Dictionary containing run data, or None if not found
+
+**Example:**
+```python
+run_data = tracker.get_run_by_version("my_model", "v1.0")
+```
+
+#### `get_latest_version(run_name, experiment_id=None)`
+
+Get the latest version of a run by name.
+
+**Parameters:**
+- `run_name` (str): The name of the run
+- `experiment_id` (int, optional): Experiment ID. If None, uses tracker's experiment_id.
+
+**Returns:**
+- `dict` or `None`: Dictionary containing run data for the latest run, or None if not found
+
+**Example:**
+```python
+latest = tracker.get_latest_version("my_model")
+```
 
 ## File Structure
 

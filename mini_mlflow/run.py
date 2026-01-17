@@ -30,6 +30,7 @@ class Run:
         run_id: Optional[str] = None,
         experiment_id: int = 0,
         name: Optional[str] = None,
+        version: Optional[str] = None,
         runs_dir: str = "mlruns"
     ):
         """
@@ -39,11 +40,13 @@ class Run:
             run_id: Unique identifier for the run. If None, a UUID will be generated.
             experiment_id: ID of the experiment this run belongs to (default: 0)
             name: Optional name for the run
+            version: Optional version string for the run (e.g., "v1.0", "v1.1")
             runs_dir: Base directory for storing runs (default: "mlruns")
         """
         self.run_id = run_id if run_id is not None else uuid.uuid4().hex
         self.experiment_id = experiment_id
         self.name = name
+        self.version = version
         self.status = "RUNNING"
         self.start_time = datetime.utcnow().isoformat() + "Z"
         self.end_time: Optional[str] = None
@@ -56,6 +59,7 @@ class Run:
         """Save run metadata to storage."""
         metadata = {
             "name": self.name,
+            "version": self.version,
             "status": self.status,
             "start_time": self.start_time,
             "end_time": self.end_time,

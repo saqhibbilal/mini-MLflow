@@ -47,7 +47,8 @@ class ExperimentTracker:
         self,
         run_name: Optional[str] = None,
         experiment_id: Optional[int] = None,
-        run_id: Optional[str] = None
+        run_id: Optional[str] = None,
+        version: Optional[str] = None
     ) -> Run:
         """
         Start a new run and set it as the active run.
@@ -56,6 +57,7 @@ class ExperimentTracker:
             run_name: Optional name for the run. If None, uses the tracker's run_name.
             experiment_id: Optional experiment ID. If None, uses the tracker's experiment_id.
             run_id: Optional run ID. If None, a UUID will be generated.
+            version: Optional version string for the run (e.g., "v1.0", "v1.1")
             
         Returns:
             The newly created Run object
@@ -77,6 +79,7 @@ class ExperimentTracker:
             run_id=run_id,
             experiment_id=final_experiment_id,
             name=final_run_name,
+            version=version,
             runs_dir=self.runs_dir
         )
         
@@ -140,6 +143,63 @@ class ExperimentTracker:
         final_experiment_id = experiment_id if experiment_id is not None else self.experiment_id
         return load_run(run_id, final_experiment_id, runs_dir=self.runs_dir)
     
+    def get_run_by_version(
+        self,
+        run_name: str,
+        version: str,
+        experiment_id: Optional[int] = None
+    ) -> Optional[dict]:
+        """
+        Retrieve a run by its name and version.
+        
+        Args:
+            run_name: The name of the run
+            version: The version string (e.g., "v1.0")
+            experiment_id: Optional experiment ID. If None, uses the tracker's experiment_id.
+            
+        Returns:
+            Dictionary containing run data, or None if not found
+        """
+        final_experiment_id = experiment_id if experiment_id is not None else self.experiment_id
+        runs = self.list_runs(final_experiment_id)
+        
+        for run_id in runs:
+            run_data = self.get_run(run_id, final_experiment_id)
+            metadata = run_data.get("metadata", {})
+            if metadata.get("name") == run_name and metadata.get("version") == version:
+                return run_data
+        
+        return None
+    
+    def get_latest_version(
+        self,
+        run_name: str,
+        experiment_id: Optional[int] = None
+    ) -> Optional[dict]:
+        """
+        Get the latest version of a run by name.
+        
+        This finds the most recent run with the given name, regardless of version.
+        If versions are used, you may want to implement semantic version comparison.
+        
+        Args:
+            run_name: The name of the run
+            experiment_id: Optional experiment ID. If None, uses the tracker's experiment_id.
+            
+        Returns:
+            Dictionary containing run data for the latest run, or None if not found
+        """
+        final_experiment_id = experiment_id if experiment_id is not None else self.experiment_id
+        runs = self.list_runs(final_experiment_id)
+        
+        for run_id in runs:
+            run_data = self.get_run(run_id, final_experiment_id)
+            metadata = run_data.get("metadata", {})
+            if metadata.get("name") == run_name:
+                return run_data
+        
+        return None
+    
     def __enter__(self):
         """
         Context manager entry.
@@ -188,7 +248,8 @@ def _set_active_run(run: Optional[Run]) -> None:
 def start_run(
     run_name: Optional[str] = None,
     experiment_id: int = 0,
-    run_id: Optional[str] = None
+    run_id: Optional[str] = None,
+    version: Optional[str] = None
 ) -> Run:
     """
     Start a new run (MLflow-like API).
@@ -199,13 +260,14 @@ def start_run(
         run_name: Optional name for the run
         experiment_id: ID of the experiment (default: 0)
         run_id: Optional run ID. If None, a UUID will be generated.
+        version: Optional version string for the run (e.g., "v1.0", "v1.1")
         
     Returns:
         The newly created Run object
     """
     global _global_tracker
     _global_tracker.experiment_id = experiment_id
-    return _global_tracker.start_run(run_name=run_name, run_id=run_id)
+    return _global_tracker.start_run(run_name=run_name, run_id=run_id, version=version)
 
 
 def active_run() -> Optional[Run]:
